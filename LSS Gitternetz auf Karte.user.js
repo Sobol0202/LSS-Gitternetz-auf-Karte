@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         LSS Gitternetz
 // @namespace    www.leitstellenspiel.de
-// @version      1.0
-// @description  Fügt ein Gitternetz zur Karte hinzu
+// @version      1.2
+// @description  Fügt ein Gitternetz zur Karte hinzu und aktiviert es durch Drücken der Rautetaste
 // @author       MissSobol
 // @match        https://www.leitstellenspiel.de/
 // @grant        none
@@ -11,51 +11,46 @@
 (function() {
     'use strict';
 
-        initializeMap();
+    initializeMap();
 
     // Funktion zur Initialisierung der Karte
     function initializeMap() {
-        //console.log('Initialisiere die Karte...');
-
         // Überprüfen, ob der Kartencontainer bereits existiert
         if (document.getElementById('map') && !window.map) {
-
             // Basiskartenschicht hinzufügen (URL je nach Bedarf anpassen)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(window.map);
-        } else {
-            //console.log('Karte existiert bereits oder Kartencontainer nicht gefunden.');
         }
 
         // Button zum Hinzufügen des Gitternetzes erstellen
         createGridButton();
+
+        // Event Listener für das Drücken der Rautetaste hinzufügen
+        document.addEventListener('keydown', function(event) {
+            if (event.key === '#') {
+                toggleGrid();
+            }
+        });
     }
 
     // Funktion zum Erstellen und Anhängen des Gitternetz-Buttons
     function createGridButton() {
-        //console.log('Erstelle den Gitternetz-Button...');
-
-        var buttonContainer = document.createElement('div');
-        buttonContainer.style.position = 'absolute'; // Absolute Positionierung
-        buttonContainer.style.bottom = '10px'; // Unten positionieren
-        buttonContainer.style.left = '50%'; // Horizontal zentrieren
-        buttonContainer.style.transform = 'translateX(-50%)'; // Horizontal zentrieren
-        buttonContainer.style.zIndex = '1000'; // Stellt sicher, dass der Button über der Karte liegt
-
-        var gridButton = document.createElement('button');
+        var buttonContainer = document.createElement('li');
+        var gridButton = document.createElement('a');
+        gridButton.href = '#';
         gridButton.textContent = 'Gitternetz einfügen';
-        gridButton.className = 'btn btn-xs btn-default'; // Klasse hinzufügen
         gridButton.addEventListener('click', function() {
-            //console.log('Button geklickt! Füge Gitternetz ein...');
             removeGridFromExistingMap();
             addGridToExistingMap();
         });
 
         buttonContainer.appendChild(gridButton);
-        document.getElementById('map').appendChild(buttonContainer); // An das Karten-Element anhängen
 
-        //console.log('Gitternetz-Button erstellt und angehängt.');
+        // Insert the trigger-element to the DOM
+        document
+            .querySelector('#menu_profile + .dropdown-menu > li.divider')
+            ?.before(buttonContainer);
     }
 
     // Funktion zum Hinzufügen des Gitternetzes zur vorhandenen Karte
@@ -112,13 +107,23 @@
         //console.log('Vorhandenes Gitternetz von der Karte entfernt.');
     }
 
-    // Funktion zum Laden des Skripts
-    function loadScript(url, callback) {
-        //console.log('Lade Skript...');
-        const script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = url;
-        script.onload = callback;
-        document.head.appendChild(script);
+    // Funktion zum Umschalten des Gitternetzes durch Drücken der Rautetaste
+    function toggleGrid() {
+        // Überprüfen, ob das Gitternetz bereits auf der Karte vorhanden ist
+        const existingMap = window.map;
+        let hasGrid = false;
+
+        existingMap.eachLayer(function(layer) {
+            if (layer instanceof L.Polygon) {
+                hasGrid = true;
+            }
+        });
+
+        // Wenn das Gitternetz vorhanden ist, entfernen, andernfalls hinzufügen
+        if (hasGrid) {
+            removeGridFromExistingMap();
+        } else {
+            addGridToExistingMap();
+        }
     }
 })();
